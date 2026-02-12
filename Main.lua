@@ -120,7 +120,25 @@ if not l then
     warn("DEBUG: Last characters of " .. i .. ": '" .. j:sub(-20) .. "'")
     error("SYNTAX ERROR IN MODULE " .. tostring(i) .. ": " .. tostring(m))
 end
-h[i] = l(...)
+-- Найди строку h[i] = l(...) и замени на:
+
+local libs = {
+    crypt = {
+        base64decode = function(d) return FinalDecode(d) end,
+        base64_decode = function(d) return FinalDecode(d) end,
+    },
+    cloneref = function(o) return o end,
+    getcustomasset = function(p) return "" end,
+    writefile = function() end,
+    isfolder = function() return false end,
+    makefolder = function() end
+}
+
+-- Передаем эти библиотеки внутрь модуля через параметры (если автор их принимает)
+-- Или подменяем окружение (самый надежный способ для Delta)
+setfenv(l, setmetatable(libs, {__index = getfenv()}))
+
+h[i] = l(libs)
 			end return h end function e:
 LoadModules(g,h)for i,j in next,g do local k=j.Init if not k then continue end j
 :Init(h)end end function e:CreateFont(g,h)if not h then return end local i=`assets/{
@@ -162,6 +180,7 @@ local w=e:MakeActorScript(g,t)k:LoadHooks(w,t)local x=l:AskUser{Title=
 ,"If it doesn't work, rejoin and press 'No'",'',
 '(This does not affect game functionality)'},Options={'Yes','No'}}=='Yes'u:Fire(
 'BeginHooks',{PatchFunctions=x})
+
 
 
 
