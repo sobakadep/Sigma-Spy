@@ -76,9 +76,13 @@ LoadLibraries(g,...)local h={}for i,j in next,g do local k=typeof(j)=='table'and
 j[1]=='base64'j=k and j[2]or j if typeof(j)~='string'and not k then h[i]=j
 continue end 
 if k then 
-    -- Используем наш SimpleBase64 вместо crypt
     local success, decoded = pcall(function() return SimpleBase64.decode(j) end)
-    if success then j = decoded else warn("Failed to decode module: " .. tostring(i)) end
+    if success then 
+        -- ОЧИСТКА: Удаляем нулевые байты (null bytes) из конца строки
+        j = decoded:gsub("%z+$", "") 
+    else 
+        warn("Failed to decode module: " .. tostring(i)) 
+    end
     g[i] = j 
 end
 
@@ -129,5 +133,6 @@ local w=e:MakeActorScript(g,t)k:LoadHooks(w,t)local x=l:AskUser{Title=
 ,"If it doesn't work, rejoin and press 'No'",'',
 '(This does not affect game functionality)'},Options={'Yes','No'}}=='Yes'u:Fire(
 'BeginHooks',{PatchFunctions=x})
+
 
 
