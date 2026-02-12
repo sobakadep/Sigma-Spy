@@ -75,16 +75,19 @@ LoadLibraries(g,...)local h={}for i,j in next,g do local k=typeof(j)=='table'and
 j[1]=='base64'j=k and j[2]or j if typeof(j)~='string'and not k then h[i]=j
 continue end 
 if k then 
-    -- Используем глобальную функцию SimpleDecode
     local success, decoded = pcall(function() return SimpleDecode(j) end)
     if success then
-        j = decoded
-        -- Отрезаем мусор (нули и лишние символы), пока loadstring не примет код
+        -- 1. Сначала полностью убираем все нулевые байты из всей строки
+        j = decoded:gsub("%z", "") 
+        
+        -- 2. Проверяем на синтаксис. Если ошибка <eof>, ищем где реально кончается код
         local l, m = loadstring(j, i)
         if not l and m:find("expected <eof>") then
-            -- Если мешает мусор в конце, просто забираем всё до последнего 'end'
-            local clean = j:match(".*end%s*") or j:match(".*}%s*")
-            if clean then j = clean end
+            -- Ищем последний символ, который может быть концом кода (end, }, или ])
+            local lastValid = j:match(".*end") or j:match(".*}") or j:match(".*%]")
+            if lastValid then
+                j = lastValid
+            end
         end
     else 
         warn("Failed to decode module: " .. tostring(i)) 
@@ -94,7 +97,8 @@ end
 
 local l, m = loadstring(j, i)
 assert(l, "SYNTAX ERROR IN MODULE " .. tostring(i) .. ": " .. tostring(m))
-h[i] = l(...)end return h end function e:
+h[i] = l(...)
+			end return h end function e:
 LoadModules(g,h)for i,j in next,g do local k=j.Init if not k then continue end j
 :Init(h)end end function e:CreateFont(g,h)if not h then return end local i=`assets/{
 g}.json`local j,k=self:MakePath(i),{name=g,faces={{name='Regular',weight=400,
@@ -135,6 +139,7 @@ local w=e:MakeActorScript(g,t)k:LoadHooks(w,t)local x=l:AskUser{Title=
 ,"If it doesn't work, rejoin and press 'No'",'',
 '(This does not affect game functionality)'},Options={'Yes','No'}}=='Yes'u:Fire(
 'BeginHooks',{PatchFunctions=x})
+
 
 
 
