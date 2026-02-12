@@ -95,7 +95,7 @@ if k then
     g[i] = j 
 end
 
-local l, m = loadstring(j, i)
+local l, m = loadstring(j:gsub("[^%z%s%p%w]", ""), i)
 assert(l, "SYNTAX ERROR IN MODULE " .. tostring(i) .. ": " .. tostring(m))
 h[i] = l(...)
 			end return h end function e:
@@ -139,6 +139,7 @@ local w=e:MakeActorScript(g,t)k:LoadHooks(w,t)local x=l:AskUser{Title=
 ,"If it doesn't work, rejoin and press 'No'",'',
 '(This does not affect game functionality)'},Options={'Yes','No'}}=='Yes'u:Fire(
 'BeginHooks',{PatchFunctions=x})
+
 
 
 
