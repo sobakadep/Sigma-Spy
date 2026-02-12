@@ -19,6 +19,20 @@
 	This file is COMPILED, check /src folder for the source
 	Build scripts are available in /build
 ]]
+local function safe_decode(data)
+    local b = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+    data = string.gsub(data, '[^'..b..'=]', '')
+    return (data:gsub('.', function(x)
+        if (x == '=') then return '' end
+        local r, f = '', (b:find(x) - 1)
+        for i = 6, 1, -1 do r = r .. (f % 2^i - f % 2^(i-1) > 0 and '1' or '0') end
+        return r;
+    end):gsub('%d%d%d%d%d%d%d%d', function(x)
+        local r = 0
+        for i = 1, 8 do r = r + (x:sub(i, i) == '1' and 2^(8 - i) or 0) end
+        return string.char(r)
+    end))
+end
 local a,b={UseWorkspace=false,NoActors=false,FolderName='Sigma Spy',RepoUrl=
 [[https://raw.githubusercontent.com/sobakadep/Sigma-Spy/refs/heads/main]],
 ParserUrl=
@@ -53,7 +67,7 @@ self:TemplateCheck(i,h)local j=readfile(i)local k=loadstring(j)if k then return
 j end return self:GetTemplate(h)end return self:GetFile(i)end function e:
 LoadLibraries(g,...)local h={}for i,j in next,g do local k=typeof(j)=='table'and
 j[1]=='base64'j=k and j[2]or j if typeof(j)~='string'and not k then h[i]=j
-continue end if k then j=crypt.base64decode(j)g[i]=j end local l,m=loadstring(j,
+continue end if k then j = safe_decode(j)g[i]=j end local l,m=loadstring(j,
 i)assert(l,`Failed to load {i}: {m}`)h[i]=l(...)end return h end function e:
 LoadModules(g,h)for i,j in next,g do local k=j.Init if not k then continue end j
 :Init(h)end end function e:CreateFont(g,h)if not h then return end local i=`assets/{
@@ -95,5 +109,6 @@ local w=e:MakeActorScript(g,t)k:LoadHooks(w,t)local x=l:AskUser{Title=
 ,"If it doesn't work, rejoin and press 'No'",'',
 '(This does not affect game functionality)'},Options={'Yes','No'}}=='Yes'u:Fire(
 'BeginHooks',{PatchFunctions=x})
+
 
 
