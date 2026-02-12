@@ -79,17 +79,20 @@ j[1]=='base64'j=k and j[2]or j if typeof(j)~='string'and not k then h[i]=j
 continue end 
 if k then 
     local success, decoded = pcall(function() return SimpleBase64.decode(j) end)
-    if success then 
-        -- 1. Удаляем нулевые байты
-        decoded = decoded:gsub("%z", "") 
-        
-        -- 2. Ищем последний 'end' или '}', чтобы отрезать мусор после него
-        -- Большинство модулей Sigma Spy заканчиваются на 'end' или '}'
-        local lastEnd = decoded:match(".*end%s*") or decoded:match(".*}%s*")
-        if lastEnd then
-            j = lastEnd
-        else
-            j = decoded
+    if success then
+        j = decoded
+        -- ФИНАЛЬНОЕ РЕШЕНИЕ: Отрезаем мусор, пока loadstring не примет код
+        local attempts = 0
+        while attempts < 10 do -- Пытаемся отрезать до 10 лишних байтов с конца
+            local l, m = loadstring(j, i)
+            if l then 
+                break 
+            elseif m and m:find("expected <eof>") then
+                j = j:sub(1, -2) -- Отрезаем последний символ
+                attempts = attempts + 1
+            else
+                break -- Если ошибка другая (не eof), выходим
+            end
         end
     else 
         warn("Failed to decode module: " .. tostring(i)) 
@@ -98,11 +101,7 @@ if k then
 end
 
 local l, m = loadstring(j, i)
-if not l then
-    -- Это поможет нам увидеть реальную ошибку, если loadstring вернул nil
-    warn("SYNTAX ERROR IN MODULE " .. tostring(i) .. ": " .. tostring(m))
-    error("Check console for details")
-end
+assert(l, "SYNTAX ERROR IN MODULE " .. tostring(i) .. ": " .. tostring(m))
 h[i] = l(...)end return h end function e:
 LoadModules(g,h)for i,j in next,g do local k=j.Init if not k then continue end j
 :Init(h)end end function e:CreateFont(g,h)if not h then return end local i=`assets/{
@@ -144,6 +143,7 @@ local w=e:MakeActorScript(g,t)k:LoadHooks(w,t)local x=l:AskUser{Title=
 ,"If it doesn't work, rejoin and press 'No'",'',
 '(This does not affect game functionality)'},Options={'Yes','No'}}=='Yes'u:Fire(
 'BeginHooks',{PatchFunctions=x})
+
 
 
 
