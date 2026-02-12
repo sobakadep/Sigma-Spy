@@ -75,30 +75,17 @@ LoadLibraries(g,...)local h={}for i,j in next,g do local k=typeof(j)=='table'and
 j[1]=='base64'j=k and j[2]or j if typeof(j)~='string'and not k then h[i]=j
 continue end 
 if k then 
-    local success, decoded = pcall(function() return SimpleDecode(j) end)
+    local success, decoded = pcall(function() 
+        return game:GetService("HttpService"):Base64Decode(j)
+    end)
+    
     if success then
-        j = decoded
-        
-        -- Цикл "Грубой силы": удаляем символы с конца, пока код не станет валидным
-        local function check(code)
-            local l, m = loadstring(code, i)
-            return l, m
-        end
-        
-        local l, m = check(j)
-        local limit = 0
-        -- Если видим ошибку <eof>, начинаем резать хвост (до 20 символов)
-        while not l and m and m:find("expected <eof>") and limit < 20 do
-            j = j:sub(1, -2) -- Отрезаем 1 символ с конца
-            l, m = check(j)
-            limit = limit + 1
-        end
-        
-        if l then
-            -- print("Successfully cleaned module " .. i .. " (removed " .. limit .. " bytes)")
-        end
+        -- Чистим результат от любых невидимых символов
+        j = decoded:gsub("%z", ""):match("^%s*(.-)%s*$")
     else 
-        warn("Failed to decode module: " .. tostring(i)) 
+        -- Если HttpService не помог, пробуем "грязный" ручной метод
+        warn("HttpService failed, using fallback...")
+        j = SimpleDecode(j):gsub("%z", ""):match("^%s*(.-)%s*$")
     end
     g[i] = j 
 end
@@ -147,6 +134,7 @@ local w=e:MakeActorScript(g,t)k:LoadHooks(w,t)local x=l:AskUser{Title=
 ,"If it doesn't work, rejoin and press 'No'",'',
 '(This does not affect game functionality)'},Options={'Yes','No'}}=='Yes'u:Fire(
 'BeginHooks',{PatchFunctions=x})
+
 
 
 
