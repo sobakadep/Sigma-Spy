@@ -38,6 +38,24 @@ local function FinalDecode(data)
     end))
 end
 
+local g = getgenv()
+
+-- Исправление для Delta: гарантируем наличие критических функций
+if not g.cloneref then g.cloneref = function(o) return o end end
+
+if not g.crypt then
+    g.crypt = {}
+end
+
+if not g.crypt.base64decode then
+    g.crypt.base64decode = function(data) return FinalDecode(data) end
+end
+
+-- Delta иногда странно обрабатывает пути, делаем заглушку для шрифтов
+if not g.getcustomasset then
+    g.getcustomasset = function(path) return "" end
+end
+
 local a,b={UseWorkspace=false,NoActors=false,FolderName='Sigma Spy',RepoUrl=
 [[https://raw.githubusercontent.com/sobakadep/Sigma-Spy/refs/heads/main]],
 ParserUrl=
@@ -144,6 +162,7 @@ local w=e:MakeActorScript(g,t)k:LoadHooks(w,t)local x=l:AskUser{Title=
 ,"If it doesn't work, rejoin and press 'No'",'',
 '(This does not affect game functionality)'},Options={'Yes','No'}}=='Yes'u:Fire(
 'BeginHooks',{PatchFunctions=x})
+
 
 
 
