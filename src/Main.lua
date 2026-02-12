@@ -3,8 +3,8 @@ local Configuration = {
 	UseWorkspace = false, 
 	NoActors = false,
 	FolderName = "Sigma Spy",
-	RepoUrl = "https://raw.githubusercontent.com/Xylemo/Tnah/refs/heads/main",
-	ParserUrl = "https://raw.githubusercontent.com/depthso/Roblox-parser/refs/heads/main/dist/Main.luau"
+	RepoUrl = "https://raw.githubusercontent.com/sobakadep/Sigma-Spy/refs/heads/main",
+	ParserUrl = "https://raw.githubusercontent.com/sobakadep/Roblox-parser/refs/heads/main/dist/Main.luau"
 }
 
 --// Load overwrites
@@ -133,3 +133,4 @@ Event:Fire("BeginHooks", {
 	PatchFunctions = EnablePatches
 
 })
+
