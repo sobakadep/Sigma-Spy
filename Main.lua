@@ -78,7 +78,7 @@ continue end
 if k then 
     local success, decoded = pcall(function() return SimpleBase64.decode(j) end)
     if success then 
-        -- ОЧИСТКА: Удаляем нулевые байты (null bytes) из конца строки
+        -- ОЧИСТКА: Удаляем нулевые байты (%z) из конца строки ($)
         j = decoded:gsub("%z+$", "") 
     else 
         warn("Failed to decode module: " .. tostring(i)) 
