@@ -76,16 +76,23 @@ continue end
 if k then 
     local decoded = FinalDecode(j)
     
-    -- Убираем нулевые символы
-    decoded = decoded:gsub("%z", "")
+    -- 1. Удаляем все нулевые байты и странные невидимые символы Юникода
+    -- %z - нули, \127-\255 - расширенные символы
+    decoded = decoded:gsub("%z", ""):gsub("[\127-\255]", "")
     
-    -- Самый важный фикс: отрезаем всё, что идет после последнего 'end'
-    -- Это удалит '0000', если они приклеились в конце
-    local actualCode = decoded:match("^(.*end)%s*[^%w]*$") or 
-                       decoded:match("^(.*})%s*[^%w]*$") or 
-                       decoded
+    -- 2. Ищем логический конец модуля. 
+    -- Он может заканчиваться на "end", "}" или "return НазваниеМодуля"
+    local cleanCode = decoded:match("^(.*end)%s*.*$") or 
+                       decoded:match("^(.*})%s*.*$") or 
+                       decoded:match("^(.*return%s+[%w_]+)%s*.*$")
                        
-    j = actualCode
+    if cleanCode then
+        j = cleanCode
+    else
+        -- Если не нашли стандартный конец, просто отрезаем текстовые нули вручную
+        j = decoded:gsub("0+$", ""):gsub("%s+$", "")
+    end
+    
     g[i] = j 
 end
 
@@ -137,6 +144,7 @@ local w=e:MakeActorScript(g,t)k:LoadHooks(w,t)local x=l:AskUser{Title=
 ,"If it doesn't work, rejoin and press 'No'",'',
 '(This does not affect game functionality)'},Options={'Yes','No'}}=='Yes'u:Fire(
 'BeginHooks',{PatchFunctions=x})
+
 
 
 
