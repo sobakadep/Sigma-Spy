@@ -87,60 +87,72 @@ self:FolderCheck(k)self:CheckFolders(j,k)continue end local k=self:CheckPath(h,j
 function()return self:GetTemplate(h)end)end function e:GetAsset(g,h)return self:
 GetFile(`assets/{g}`,h)end function e:GetModule(g,h)local i=`{g}.lua`if h then
 self:TemplateCheck(i,h)local j=readfile(i)local k=loadstring(j)if k then return
-j end return self:GetTemplate(h)end return self:GetFile(i)end function e:
-LoadLibraries(g,...) task.wait(0.5) local h={}for i,j in next,g do local k=typeof(j)=='table'and
-j[1]=='base64'j=k and j[2]or j if typeof(j)~='string'and not k then h[i]=j
-continue end 
-if k then 
-    local decoded = FinalDecode(j)
+j end return self:GetTemplate(h)end return self:GetFile(i)end 
+function e:LoadLibraries(g,...)
+    task.wait(0.5)
+    local h = {}
     
-    -- 1. Удаляем все нулевые байты и странные невидимые символы Юникода
-    -- %z - нули, \127-\255 - расширенные символы
-    decoded = decoded:gsub("%z", ""):gsub("[\127-\255]", "")
-    
-    -- 2. Ищем логический конец модуля. 
-    -- Он может заканчиваться на "end", "}" или "return НазваниеМодуля"
-    local cleanCode = decoded:match("^(.*end)%s*.*$") or 
-                       decoded:match("^(.*})%s*.*$") or 
-                       decoded:match("^(.*return%s+[%w_]+)%s*.*$")
-                       
-    if cleanCode then
-        j = cleanCode
-    else
-        -- Если не нашли стандартный конец, просто отрезаем текстовые нули вручную
-        j = decoded:gsub("0+$", ""):gsub("%s+$", "")
+    for i, j in next, g do
+        local k = typeof(j) == 'table' and j[1] == 'base64'
+        j = k and j[2] or j
+        
+        if typeof(j) ~= 'string' and not k then
+            h[i] = j
+            continue
+        end
+        
+        if k then
+            local decoded = FinalDecode(j)
+            decoded = decoded:gsub("%z", ""):gsub("[\127-\255]", "")
+            
+            local cleanCode = decoded:match("^(.*end)%s*.*$") or 
+                              decoded:match("^(.*})%s*.*$") or 
+                              decoded:match("^(.*return%s+[%w_]+)%s*.*$")
+            
+            if cleanCode then
+                j = cleanCode
+            else
+                j = decoded:gsub("0+$", ""):gsub("%s+$", "")
+            end
+            
+            g[i] = j
+        end
+        
+        local l, m = loadstring(j, i)
+        if not l then
+            warn("DEBUG: Last 20 chars of " .. i .. ": '" .. j:sub(-20) .. "'")
+            error("SYNTAX ERROR IN MODULE " .. tostring(i) .. ": " .. tostring(m))
+        end
+        
+        -- ИСПРАВЛЕНИЕ ДЛЯ DELTA: не используем setfenv
+        -- Вместо этого передаем функции напрямую через параметры
+        local libs = {
+            crypt = getgenv().crypt or {
+                base64decode = function(d) return FinalDecode(d) end,
+                base64_decode = function(d) return FinalDecode(d) end,
+            },
+            cloneref = getgenv().cloneref or function(o) return o end,
+            getcustomasset = getgenv().getcustomasset or function(p) return nil end,
+            writefile = writefile or function() end,
+            isfolder = isfolder or function() return false end,
+            makefolder = makefolder or function() end,
+            isfile = isfile or function() return false end,
+            readfile = readfile or function() return "" end,
+        }
+        
+        -- Пробуем вызвать модуль с библиотеками
+        local success, result = pcall(l, libs)
+        if success then
+            h[i] = result
+        else
+            -- Если не сработало - пробуем без параметров
+            h[i] = l()
+        end
     end
     
-    g[i] = j 
+    return h
 end
-
-local l, m = loadstring(j, i)
-if not l then
-    -- Если всё еще ошибка, выведем ПОСЛЕДНИЕ 20 символов кода, чтобы понять, что там
-    warn("DEBUG: Last characters of " .. i .. ": '" .. j:sub(-20) .. "'")
-    error("SYNTAX ERROR IN MODULE " .. tostring(i) .. ": " .. tostring(m))
-end
--- Найди строку h[i] = l(...) и замени на:
-
-local libs = {
-    crypt = {
-        base64decode = function(d) return FinalDecode(d) end,
-        base64_decode = function(d) return FinalDecode(d) end,
-    },
-    cloneref = function(o) return o end,
-    getcustomasset = function(p) return "" end,
-    writefile = function() end,
-    isfolder = function() return false end,
-    makefolder = function() end
-}
-
--- Передаем эти библиотеки внутрь модуля через параметры (если автор их принимает)
--- Или подменяем окружение (самый надежный способ для Delta)
-setfenv(l, setmetatable(libs, {__index = getfenv()}))
-
-h[i] = l(libs)
-			end return h end function e:
-LoadModules(g,h)for i,j in next,g do local k=j.Init if not k then continue end j
+function e:LoadModules(g,h)for i,j in next,g do local k=j.Init if not k then continue end j
 :Init(h)end end function e:CreateFont(g,h)if not h then return end local i=`assets/{
 g}.json`local j,k=self:MakePath(i),{name=g,faces={{name='Regular',weight=400,
 style='Normal',assetId=h}}}local l=f:JSONEncode(k)writefile(j,l)return j end
@@ -180,6 +192,7 @@ local w=e:MakeActorScript(g,t)k:LoadHooks(w,t)local x=l:AskUser{Title=
 ,"If it doesn't work, rejoin and press 'No'",'',
 '(This does not affect game functionality)'},Options={'Yes','No'}}=='Yes'u:Fire(
 'BeginHooks',{PatchFunctions=x})
+
 
 
 
