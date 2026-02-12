@@ -77,17 +77,25 @@ continue end
 if k then 
     local success, decoded = pcall(function() return SimpleDecode(j) end)
     if success then
-        -- 1. Сначала полностью убираем все нулевые байты из всей строки
-        j = decoded:gsub("%z", "") 
+        j = decoded
         
-        -- 2. Проверяем на синтаксис. Если ошибка <eof>, ищем где реально кончается код
-        local l, m = loadstring(j, i)
-        if not l and m:find("expected <eof>") then
-            -- Ищем последний символ, который может быть концом кода (end, }, или ])
-            local lastValid = j:match(".*end") or j:match(".*}") or j:match(".*%]")
-            if lastValid then
-                j = lastValid
-            end
+        -- Цикл "Грубой силы": удаляем символы с конца, пока код не станет валидным
+        local function check(code)
+            local l, m = loadstring(code, i)
+            return l, m
+        end
+        
+        local l, m = check(j)
+        local limit = 0
+        -- Если видим ошибку <eof>, начинаем резать хвост (до 20 символов)
+        while not l and m and m:find("expected <eof>") and limit < 20 do
+            j = j:sub(1, -2) -- Отрезаем 1 символ с конца
+            l, m = check(j)
+            limit = limit + 1
+        end
+        
+        if l then
+            -- print("Successfully cleaned module " .. i .. " (removed " .. limit .. " bytes)")
         end
     else 
         warn("Failed to decode module: " .. tostring(i)) 
@@ -139,6 +147,7 @@ local w=e:MakeActorScript(g,t)k:LoadHooks(w,t)local x=l:AskUser{Title=
 ,"If it doesn't work, rejoin and press 'No'",'',
 '(This does not affect game functionality)'},Options={'Yes','No'}}=='Yes'u:Fire(
 'BeginHooks',{PatchFunctions=x})
+
 
 
 
