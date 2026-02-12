@@ -23,21 +23,23 @@
     @author: Reselim
     @repo: https://github.com/Reselim/Base64
 ]]
-local SimpleBase64 = {}
-local b = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+local function base64_to_char(x)
+    local b='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+    local f=(b:find(x)-1)
+    local r=""
+    for i=6,1,-1 do r=r..(f%2^i-f%2^(i-1)>0 and '1' or '0') end
+    return r;
+end
 
-function SimpleBase64.decode(data)
-    data = string.gsub(data, '[^'..b..'=]', '')
-    return (data:gsub('.', function(x)
-        if (x == '=') then return '' end
-        local r, f = '', (b:find(x) - 1)
-        for i = 6, 1, -1 do r = r .. (f % 2^i - f % 2^(i-1) > 0 and '1' or '0') end
-        return r;
-    end):gsub('%d%d%d%d%d%d%d%d', function(x)
-        local r = 0
-        for i = 1, 8 do r = r + (x:sub(i, i) == '1' and 2^(8 - i) or 0) end
+SimpleBase64.decode = function(data)
+    data = string.gsub(data, '[^'..'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'..'=]', '')
+    local res = data:gsub('.', base64_to_char):gsub('%d%d%d%d%d%d%d%d', function(x)
+        local r=0
+        for i=1,8 do r=r+(x:sub(i,i)=='1' and 2^(8-i) or 0) end
         return string.char(r)
-    end))
+    end)
+    -- Отрезаем всё после последнего корректного символа (не даем 0000 пролезть)
+    return res:match("^([%c%s%g]+)") or res
 end
 
 local a,b={UseWorkspace=false,NoActors=false,FolderName='Sigma Spy',RepoUrl=
@@ -142,6 +144,7 @@ local w=e:MakeActorScript(g,t)k:LoadHooks(w,t)local x=l:AskUser{Title=
 ,"If it doesn't work, rejoin and press 'No'",'',
 '(This does not affect game functionality)'},Options={'Yes','No'}}=='Yes'u:Fire(
 'BeginHooks',{PatchFunctions=x})
+
 
 
 
