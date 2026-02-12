@@ -23,23 +23,20 @@
     @author: Reselim
     @repo: https://github.com/Reselim/Base64
 ]]
-local function base64_to_char(x)
-    local b='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
-    local f=(b:find(x)-1)
-    local r=""
-    for i=6,1,-1 do r=r..(f%2^i-f%2^(i-1)>0 and '1' or '0') end
-    return r;
-end
-
-SimpleBase64.decode = function(data)
-    data = string.gsub(data, '[^'..'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'..'=]', '')
-    local res = data:gsub('.', base64_to_char):gsub('%d%d%d%d%d%d%d%d', function(x)
-        local r=0
-        for i=1,8 do r=r+(x:sub(i,i)=='1' and 2^(8-i) or 0) end
+getgenv().SimpleDecode = function(data)
+    local b = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+    data = string.gsub(data, '[^'..b..'=]', '')
+    local res = (data:gsub('.', function(x)
+        if (x == '=') then return '' end
+        local r, f = '', (b:find(x) - 1)
+        for i = 6, 1, -1 do r = r .. (f % 2^i - f % 2^(i-1) > 0 and '1' or '0') end
+        return r;
+    end):gsub('%d%d%d%d%d%d%d%d', function(x)
+        local r = 0
+        for i = 1, 8 do r = r + (x:sub(i, i) == '1' and 2^(8 - i) or 0) end
         return string.char(r)
-    end)
-    -- Отрезаем всё после последнего корректного символа (не даем 0000 пролезть)
-    return res:match("^([%c%s%g]+)") or res
+    end))
+    return res
 end
 
 local a,b={UseWorkspace=false,NoActors=false,FolderName='Sigma Spy',RepoUrl=
@@ -78,21 +75,16 @@ LoadLibraries(g,...)local h={}for i,j in next,g do local k=typeof(j)=='table'and
 j[1]=='base64'j=k and j[2]or j if typeof(j)~='string'and not k then h[i]=j
 continue end 
 if k then 
-    local success, decoded = pcall(function() return SimpleBase64.decode(j) end)
+    -- Используем глобальную функцию SimpleDecode
+    local success, decoded = pcall(function() return SimpleDecode(j) end)
     if success then
         j = decoded
-        -- ФИНАЛЬНОЕ РЕШЕНИЕ: Отрезаем мусор, пока loadstring не примет код
-        local attempts = 0
-        while attempts < 10 do -- Пытаемся отрезать до 10 лишних байтов с конца
-            local l, m = loadstring(j, i)
-            if l then 
-                break 
-            elseif m and m:find("expected <eof>") then
-                j = j:sub(1, -2) -- Отрезаем последний символ
-                attempts = attempts + 1
-            else
-                break -- Если ошибка другая (не eof), выходим
-            end
+        -- Отрезаем мусор (нули и лишние символы), пока loadstring не примет код
+        local l, m = loadstring(j, i)
+        if not l and m:find("expected <eof>") then
+            -- Если мешает мусор в конце, просто забираем всё до последнего 'end'
+            local clean = j:match(".*end%s*") or j:match(".*}%s*")
+            if clean then j = clean end
         end
     else 
         warn("Failed to decode module: " .. tostring(i)) 
@@ -143,6 +135,7 @@ local w=e:MakeActorScript(g,t)k:LoadHooks(w,t)local x=l:AskUser{Title=
 ,"If it doesn't work, rejoin and press 'No'",'',
 '(This does not affect game functionality)'},Options={'Yes','No'}}=='Yes'u:Fire(
 'BeginHooks',{PatchFunctions=x})
+
 
 
 
