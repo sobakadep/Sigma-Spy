@@ -23,12 +23,12 @@
     @author: Reselim
     @repo: https://github.com/Reselim/Base64
 ]]
-getgenv().SimpleDecode = function(data)
-    local b = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
-    data = string.gsub(data, '[^'..b..'=]', '')
-    local res = (data:gsub('.', function(x)
+local b64chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+local function FinalDecode(data)
+    data = string.gsub(data, '[^'..b64chars..'=]', '')
+    return (data:gsub('.', function(x)
         if (x == '=') then return '' end
-        local r, f = '', (b:find(x) - 1)
+        local r, f = '', (b64chars:find(x) - 1)
         for i = 6, 1, -1 do r = r .. (f % 2^i - f % 2^(i-1) > 0 and '1' or '0') end
         return r;
     end):gsub('%d%d%d%d%d%d%d%d', function(x)
@@ -36,7 +36,6 @@ getgenv().SimpleDecode = function(data)
         for i = 1, 8 do r = r + (x:sub(i, i) == '1' and 2^(8 - i) or 0) end
         return string.char(r)
     end))
-    return res
 end
 
 local a,b={UseWorkspace=false,NoActors=false,FolderName='Sigma Spy',RepoUrl=
@@ -75,23 +74,27 @@ LoadLibraries(g,...)local h={}for i,j in next,g do local k=typeof(j)=='table'and
 j[1]=='base64'j=k and j[2]or j if typeof(j)~='string'and not k then h[i]=j
 continue end 
 if k then 
-    local success, decoded = pcall(function() 
-        return game:GetService("HttpService"):Base64Decode(j)
-    end)
+    local decoded = FinalDecode(j)
     
-    if success then
-        -- Чистим результат от любых невидимых символов
-        j = decoded:gsub("%z", ""):match("^%s*(.-)%s*$")
-    else 
-        -- Если HttpService не помог, пробуем "грязный" ручной метод
-        warn("HttpService failed, using fallback...")
-        j = SimpleDecode(j):gsub("%z", ""):match("^%s*(.-)%s*$")
-    end
+    -- Убираем нулевые символы
+    decoded = decoded:gsub("%z", "")
+    
+    -- Самый важный фикс: отрезаем всё, что идет после последнего 'end'
+    -- Это удалит '0000', если они приклеились в конце
+    local actualCode = decoded:match("^(.*end)%s*[^%w]*$") or 
+                       decoded:match("^(.*})%s*[^%w]*$") or 
+                       decoded
+                       
+    j = actualCode
     g[i] = j 
 end
 
-local l, m = loadstring(j:gsub("[^%z%s%p%w]", ""), i)
-assert(l, "SYNTAX ERROR IN MODULE " .. tostring(i) .. ": " .. tostring(m))
+local l, m = loadstring(j, i)
+if not l then
+    -- Если всё еще ошибка, выведем ПОСЛЕДНИЕ 20 символов кода, чтобы понять, что там
+    warn("DEBUG: Last characters of " .. i .. ": '" .. j:sub(-20) .. "'")
+    error("SYNTAX ERROR IN MODULE " .. tostring(i) .. ": " .. tostring(m))
+end
 h[i] = l(...)
 			end return h end function e:
 LoadModules(g,h)for i,j in next,g do local k=j.Init if not k then continue end j
@@ -134,6 +137,7 @@ local w=e:MakeActorScript(g,t)k:LoadHooks(w,t)local x=l:AskUser{Title=
 ,"If it doesn't work, rejoin and press 'No'",'',
 '(This does not affect game functionality)'},Options={'Yes','No'}}=='Yes'u:Fire(
 'BeginHooks',{PatchFunctions=x})
+
 
 
 
