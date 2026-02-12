@@ -88,7 +88,7 @@ function()return self:GetTemplate(h)end)end function e:GetAsset(g,h)return self:
 GetFile(`assets/{g}`,h)end function e:GetModule(g,h)local i=`{g}.lua`if h then
 self:TemplateCheck(i,h)local j=readfile(i)local k=loadstring(j)if k then return
 j end return self:GetTemplate(h)end return self:GetFile(i)end function e:
-LoadLibraries(g,...)local h={}for i,j in next,g do local k=typeof(j)=='table'and
+LoadLibraries(g,...) task.wait(0.5) local h={}for i,j in next,g do local k=typeof(j)=='table'and
 j[1]=='base64'j=k and j[2]or j if typeof(j)~='string'and not k then h[i]=j
 continue end 
 if k then 
@@ -180,6 +180,7 @@ local w=e:MakeActorScript(g,t)k:LoadHooks(w,t)local x=l:AskUser{Title=
 ,"If it doesn't work, rejoin and press 'No'",'',
 '(This does not affect game functionality)'},Options={'Yes','No'}}=='Yes'u:Fire(
 'BeginHooks',{PatchFunctions=x})
+
 
 
 
